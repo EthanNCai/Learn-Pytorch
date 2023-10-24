@@ -2,7 +2,7 @@ import torch
 import torchvision
 from torch.utils.data import DataLoader
 import torch.nn as nn
-import torch.nn.functional as F
+import torch.nn.functional as nfunc
 import torch.optim as optim
 import matplotlib.pyplot as plt
 
@@ -53,18 +53,19 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
+        # Question: how to decide the values here?
         self.conv2_drop = nn.Dropout2d()
         self.fc1 = nn.Linear(320, 50)
         self.fc2 = nn.Linear(50, 10)
 
     def forward(self, x):
-        x = F.relu(F.max_pool2d(self.conv1(x), 2))
-        x = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
+        x = nfunc.relu(nfunc.max_pool2d(self.conv1(x), 2))
+        x = nfunc.relu(nfunc.max_pool2d(self.conv2_drop(self.conv2(x)), 2))
         x = x.view(-1, 320)
-        x = F.relu(self.fc1(x))
-        x = F.dropout(x, training=self.training)
+        x = nfunc.relu(self.fc1(x))
+        x = nfunc.dropout(x, training=self.training)
         x = self.fc2(x)
-        return F.log_softmax(x, dim=1)
+        return nfunc.log_softmax(x, dim=1)
 
 
 network = Net()
@@ -81,7 +82,7 @@ def train(epoch):
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
         output = network(data)
-        loss = F.nll_loss(output, target)
+        loss = nfunc.nll_loss(output, target)
         loss.backward()
         optimizer.step()
         if batch_idx % log_interval == 0:
@@ -102,7 +103,7 @@ def test():
     with torch.no_grad():
         for data, target in test_loader:
             output = network(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()
+            test_loss += nfunc.nll_loss(output, target, reduction='sum').item()
             pred = output.data.max(1, keepdim=True)[1]
             correct += pred.eq(target.data.view_as(pred)).sum()
     test_loss /= len(test_loader.dataset)
